@@ -2,41 +2,34 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'my-java-app'
-        DOCKER_REGISTRY = 'your-dockerhub-username'
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/your-repo-url.git'
+                checkout scm
             }
         }
 
-        stage('Build with Maven') {
+        stage('Build Jar') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean package'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_REGISTRY/$IMAGE_NAME:latest .'
+                sh 'docker build -t yourdockerhubusername/your-app:latest .'
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                    sh 'docker push $DOCKER_REGISTRY/$IMAGE_NAME:latest'
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    sh 'echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin'
+                    sh 'docker push yourdockerhubusername/your-app:latest'
                 }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo 'Deploy stage (Optional: Add Kubernetes, ECS, etc deployment here)'
             }
         }
     }
